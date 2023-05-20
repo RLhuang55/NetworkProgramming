@@ -12,7 +12,6 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#define MAXLINE 5000
 // ssize_t readn(int filedes, void *buff, size_t nbytes);
 // ssize_t writen(int filedes, const void *buff, size_t nbytes);
 // ssize_t readlinen(int filedes, void *buff, size_t maxlen);

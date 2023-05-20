@@ -8,23 +8,19 @@ int exe(int switch_shellcmd, char ***argv)
                 return 1;
             } 
             else if (pid == 0) {
-                // printf("this is child process and child's pid = %d,parent's pid = %d\n",getpid(),getppid());
-                // printf("execvp: %d\n",execvp(tokenlist[0], tokenlist));
+                
                 if (execvp(tokenlist[cmd][0], tokenlist[cmd]) < 0) {
                     printf("\nCould not execute command.."); 
                 }
                 exit(0);
             } 
-            else {
-                // waiting for child to terminate
-                // printf("this is parent process and pid =%d ,child's pid = %d\n",getpid(),pid);
-                wait(NULL); 
+            else {                
+                wait(NULL);
                 return 1;
             }
             return 1;
         }
         case 2:{
-            // printf("multiple pipes cmd\n");
             int unknown_index[num_of_pipe];
             int cmdnum=0;
             for(int i=0;i<=num_of_pipe;i++)
@@ -38,7 +34,6 @@ int exe(int switch_shellcmd, char ***argv)
                 else //unknown cmd
                     unknown_index[i]=0;
             }
-            // printf("cmdnum %d\n",cmdnum);
             int pipes[2*(cmdnum-1)];
             pid_t pid;
             for( int i = 0; i < cmdnum-1; i++ ){
@@ -49,28 +44,20 @@ int exe(int switch_shellcmd, char ***argv)
             int index=0;
             for(int i=0; i<=num_of_pipe;i++)
             {
-                // printf("i: %d\n",i);
-                // printf("index: %d\n",index);
-                // printf("argv[%d][0]: %s\n", i, argv[i][0]);
                 if(unknown_index[i]==1)
                 {
+                    // int save_stdout = dup(STDOUT_FILENO);
                     pid = fork();
                     if(pid==0)
-                    {
-                        // close(STDIN_FILENO);
-                        // close(STDOUT_FILENO);
-                        // if(index==0)
-                        //     close(STDIN_FILENO);
-                        // else if(index == cmdnum-1)
-                            // close(STDOUT_FILENO);
+                    {                        
                         if(index!=0)// not first command: STDIN ro read-end
                         {                        
-                            dup2(pipes[(index-1) * 2], 0);
+                            dup2(pipes[(index-1) * 2], 0); //0=STDIN
                                 // perror("dup2 cond1");
                         }
                         if(index!=cmdnum-1) //not last command: STDOUT to write-end
                         {
-                            dup2(pipes[index * 2 + 1], 1);
+                            dup2(pipes[index * 2 + 1], 1); //1=STDOUT
                                 // perror("dup2 cond2");
                         }
                         for(int j = 0; j < 2*(cmdnum-1); j++){
@@ -85,6 +72,10 @@ int exe(int switch_shellcmd, char ***argv)
                         // perror("fork error");
                         exit(EXIT_FAILURE);
                     }
+                    /*else {
+                        wait(NULL); //parent
+                        return 1;
+                    }*/
                     index++;
                 }
                 else

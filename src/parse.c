@@ -1,5 +1,5 @@
 #include"../include/myhrf.h"
-int parseinit()
+int parseinit(int connfd)
 {
     /*--------------------------------------buildin.c--------------------------------------*/
     bulin_flag=-1; //if flag=1 then turn to buildin.c
@@ -11,9 +11,9 @@ int parseinit()
             break;
         }
     }
-    if(bulin_flag!=-1)
-        buildin(bulin_flag);
-        
+    if(bulin_flag!=-1){
+        buildin(bulin_flag, connfd);
+    }    
     /*-----------------------------------decide shell flag-----------------------------------*/
     shell_flag=0;
     num_of_pipe=0;
@@ -28,8 +28,10 @@ int parseinit()
         {
             char* numtoken = strtok(tokenlist[cmd][num_of_token-1], "|");
             numpipe_num = (*numtoken)-'0';
-            if(numpipe_num>128 || numpipe_num<1)
-                printf("Numbered-Pipes N out of range\n");
+            if(numpipe_num>128 || numpipe_num<1){
+                char* p_parse = "Numbered-Pipes N out of range\n";
+                send(connfd,p_parse,strlen(p_parse),0);
+            }
             else
             {   /*reset all numpipe index*/
                 shell_flag = 3;
@@ -63,7 +65,13 @@ int parseinit()
         {
             if_unknown=1;
             numpipe_index++;
-            printf("Unknown command: [%s]\n",tokenlist[cmd][0]);
+            char* p_parse = "Unknown command: [";
+            send(connfd,p_parse,strlen(p_parse),0);
+            p_parse = tokenlist[cmd][0];
+            send(connfd,p_parse,strlen(p_parse),0);
+            p_parse = "]\n";
+            send(connfd,p_parse,strlen(p_parse),0);
+            // printf("Unknown command: [%s]\n",tokenlist[cmd][0]);
         }  
     }
     else if(shell_flag==2 || shell_flag==3)
@@ -84,7 +92,13 @@ int parseinit()
                 }
                 if(match_time!=1)
                 {
-                    printf("Unknown command: [%s]\n",tokenlist[cmd][0]);
+                    char* p_parse = "Unknown command: [";
+                    send(connfd,p_parse,strlen(p_parse),0);
+                    p_parse = tokenlist[cmd][0];
+                    send(connfd,p_parse,strlen(p_parse),0);
+                    p_parse = "]\n";
+                    send(connfd,p_parse,strlen(p_parse),0);
+                    // printf("Unknown command: [%s]\n",tokenlist[cmd][0]);
                     unknown_count++;
                     if_unknown=1;
                 } 
@@ -106,7 +120,13 @@ int parseinit()
                     {
                         if_unknown=1;
                         unknown_count++;
-                        printf("Unknown command: [%s]\n",tokenlist[cmd][j+1]);
+                        char* p_parse = "Unknown command: [";
+                        send(connfd,p_parse,strlen(p_parse),0);
+                        p_parse = tokenlist[cmd][j+1];
+                        send(connfd,p_parse,strlen(p_parse),0);
+                        p_parse = "]\n";
+                        send(connfd,p_parse,strlen(p_parse),0);
+                        // printf("Unknown command: [%s]\n",tokenlist[cmd][j+1]);
                     }
                     match_time=0;   
                 }
@@ -195,7 +215,7 @@ int parseinit()
             {
                 argv[argvnum]= &tokenlist[cmd][head];
                 argvnum++;
-            }            
+            }                
         }
         argvptr = &argv[0];
         int status = exe(shell_flag, argvptr);

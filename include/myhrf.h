@@ -7,10 +7,27 @@
 #include<sys/wait.h>
 #include<readline/readline.h>
 #include<readline/history.h>
+#include<errno.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+#include<sys/types.h>
+#include<sys/select.h>
+#include<poll.h>
+#include<signal.h>
+#include<pthread.h>
 #define MAX_CMDLEN 5000
 #define MAX_TKLEN 256
-#define NUM_BULINCMD 6
-#define NUM_SHELLCMD 5
+#define NUM_BULINCMD 10
+#define NUM_SHELLCMD 10
+typedef struct {
+    int ID;
+    char name[12];
+    char ip[20];
+    int port;
+    int connfd;
+    pid_t childpid;
+} who_info;
+extern who_info who_list[10];
 extern HISTORY_STATE *hist_state;
 extern HIST_ENTRY **hist_list;
 extern char *buf_point[MAX_CMDLEN];
@@ -34,4 +51,10 @@ extern int cmd;
 extern int numpipe_index;
 extern char *buf_copy[MAX_CMDLEN];
 extern int unk_bet_pipe;
+extern char *fifo_path;
+extern int fd_Wp;
+extern int fd_Wb;
+extern int fd_We;
+extern int num_who;
+extern char mes_fifo_path[100];
 #endif

@@ -3,7 +3,7 @@
 void doinit(char* buf)
 {
     //Make input from command line to tokens
-    buf = strtok(buf, "\n"); //delete \n
+    buf = strtok(buf, "\r");
     /*make tokenlist*/    
     if(strstr(buf,"|")==NULL)
         is_pipe=0;
@@ -12,11 +12,10 @@ void doinit(char* buf)
     char* token = strtok(buf, " ");
     num_of_token = 0;
     tokenlist[cmd] = (char**)malloc(sizeof(char*) * MAX_CMDLEN);
-    while(token!=NULL)
-    {
-        tokenlist[cmd][num_of_token] = token;
+    while(token!=NULL){   
+        tokenlist[cmd][num_of_token] = token;    //句尾有東西沒消  
         token = strtok(NULL," ");
-        num_of_token++;
+        num_of_token++;        
     }
     tokenlist[cmd][num_of_token] = NULL;
     /*buildin cmd list*/
@@ -26,10 +25,14 @@ void doinit(char* buf)
     bulincmd_list[3]="printenv";
     bulincmd_list[4]="getcwd";
     bulincmd_list[5]="setenv";
+    bulincmd_list[6]="who";
+    bulincmd_list[7]="tell";
+    bulincmd_list[8]="yell";
+    bulincmd_list[9]="name";
     /*shell cmd list*/
     DIR *dir;
     struct dirent *entry;
-    char *dir_name = "/home/ruoling/Desktop/410821246HW2/bin"; // 指定目錄名稱
+    char *dir_name = "./bin"; // 指定目錄名稱
     dir = opendir(dir_name); // 開啟目錄
     if (dir == NULL)
         perror("opendir");
@@ -38,8 +41,7 @@ void doinit(char* buf)
         if (entry->d_name[0] == '.') // 忽略隱藏檔
             continue;    
         shellcmd_list[shell_cmd_num++] = entry->d_name;
+        // NUM_SHELLCMD++;
     }
     closedir(dir); // 關閉目錄
-    // for(int i=0; i<shell_cmd_num; i++)
-    //     printf("%s\n", shellcmd_list[i]);
 }
