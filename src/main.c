@@ -38,27 +38,35 @@ ssize_t readlinen(int filedes, void *buff, size_t maxlen);
 who_info who_list[10];
 void sigchld_handler(int sig) {
     int saved_errno = errno;
+    pid_t ppid = getppid();
     pid_t end_pid;
     while((end_pid = waitpid((pid_t)(-1),0,WNOHANG))>0) {
-        printf("sigchld_handler %d\n", end_pid);
-        print_who_info_for_parent(&who_list);
-        int index=-1;
-        for(int i=0;i<num_who;i++){
-            if(who_list[i].childpid == end_pid){
-                index = who_list[i].ID;
-                break;
+        // if(ppid != getpid()){
+            printf("sigchld_handler %d\n", end_pid);
+        //     break;
+        // }
+        // else{
+            // printf("sigchld_handler %d\n", end_pid);
+            // print_who_info_for_parent(&who_list);
+            int index=-1;
+            for(int i=0;i<num_who;i++){
+                if(who_list[i].childpid == end_pid){
+                    index = who_list[i].ID;
+                    break;
+                }
             }
-        }
-        printf("deleteindex = %d\n", index);
-        printf("now num_who = %d\n", num_who);
-        num_who = remove_who_info(&who_list, index);
-        print_who_info_for_parent(&who_list);
-        printf("exit num_who = %d\n", num_who);
-        char del_mesfifo[100];
-        sprintf(del_mesfifo, "%dmes_fifo", end_pid);
-        unlink(del_mesfifo);
+            // printf("deleteindex = %d\n", index);
+            // printf("now num_who = %d\n", num_who);
+            num_who = remove_who_info(&who_list, index);
+            // print_who_info_for_parent(&who_list);
+            // printf("exit num_who = %d\n", num_who);
+            char del_mesfifo[100];
+            sprintf(del_mesfifo, "%dmes_fifo", end_pid);
+            unlink(del_mesfifo);
+            errno = saved_errno;
+        // }
     }
-    errno = saved_errno;
+    
 }
 void set_signal_action(void)
 {
@@ -129,7 +137,7 @@ int main(int argc, char **argv)
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(9876);    
+    servaddr.sin_port = htons(9877);    
     if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
         perror("bind error");
         exit(0);
@@ -139,13 +147,15 @@ int main(int argc, char **argv)
         perror("listen error");
     }   
     /*----------------------shell setting----------------------*/
+    pid_t rootserv_pid = getpid(); //1574
+    int rootflag=0;
     while(1)
     {
         clilen = sizeof(cliaddr);
         connfd = accept(listenfd, (struct sockaddr*)&cliaddr, &clilen);
         if(connfd == -1)
         {
-            // perror("accept error");
+            perror("accept error");
             continue;
         }
         /*making who_info*/
@@ -154,20 +164,24 @@ int main(int argc, char **argv)
         inet_ntop(AF_INET, &client_addr->sin_addr, client_ip, 20);
         int client_port = ntohs(client_addr->sin_port);           
         mkfifo("who_fifo",0777);   
-        mkfifo("name_fifo",0777);    
+        mkfifo("name_fifo",0777); 
+        printf("first root server pid = %d\n", rootserv_pid);
         childpid = fork();
-        add_who_info(&who_list, client_ip, client_port, connfd, childpid);
-        print_who_info_for_parent(&who_list);
-        if ( childpid == 0 ) { //child process
+        if ( childpid == 0 && getppid() == rootserv_pid) { //child process
             close(listenfd);     // close listening socket in child process
             /*enter shell*/      
-            printf("childpid = %d\n", getpid());      
-            printf("enter num_who = %d\n", num_who);
+            signal(SIGCHLD, SIG_IGN);
+            printf("childpid = %d\n", getpid());
+            printf("childppid = %d\n", getppid());
             sprintf(mes_fifo_path, "%d%s", getpid(), "mes_fifo");
             mkfifo(mes_fifo_path,0777);
             send(connfd, "% ", 2, 0);
             str_echo(connfd);    // process the request
             unlink(mes_fifo_path);
+            exit(0);
+        }
+        else if ( childpid == 0 && getppid() != rootserv_pid){
+            printf("test getppid %d\n",getppid());
             exit(0);
         }
         else if(childpid < 0)
@@ -177,6 +191,11 @@ int main(int argc, char **argv)
         }
         else
         {
+            printf("parent childpid = %d\n", childpid);
+            printf("parent childppid = %d\n", getppid());
+            printf("main add_who_info\n");
+            add_who_info(&who_list, client_ip, client_port, connfd, childpid);
+            print_who_info_for_parent(&who_list);
             close(connfd); // close connected socket in parent process
             continue;
         }                       
